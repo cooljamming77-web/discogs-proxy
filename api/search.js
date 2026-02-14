@@ -65,7 +65,8 @@ module.exports = async (req, res) => {
             genre: firstResult.genre ? firstResult.genre.join(', ') : '',
             country: firstResult.country || '',
             year: firstResult.year || '',
-            style: firstResult.style ? firstResult.style.join(', ') : ''
+            style: firstResult.style ? firstResult.style.join(', ') : '',
+            format: firstResult.format ? firstResult.format.join(', ') : ''
           }
         };
         
