@@ -19,8 +19,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // クエリパラメータからカタログ番号を取得
-  const { catno } = req.query;
+  // クエリパラメータからカタログ番号とレーベル名を取得
+  const { catno, label } = req.query;
 
   if (!catno) {
     return res.status(400).json({ error: 'Catalog number is required' });
@@ -35,8 +35,13 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Discogs APIにリクエスト
-    const discogsUrl = `https://api.discogs.com/database/search?catno=${encodeURIComponent(catno)}&type=release`;
+    // Discogs APIにリクエスト（レーベル名も検索条件に追加）
+    let discogsUrl = `https://api.discogs.com/database/search?catno=${encodeURIComponent(catno)}&type=release`;
+    
+    // レーベル名が指定されている場合は追加
+    if (label && label.trim() !== '') {
+      discogsUrl += `&label=${encodeURIComponent(label)}`;
+    }
     
     const response = await fetch(discogsUrl, {
       method: 'GET',
