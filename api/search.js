@@ -1,4 +1,4 @@
-// Discogs API プロキシサーバー
+// Discogs API プロキシサーバー（詳細情報取得版）
 // Vercel Serverless Function
 
 const fetch = require('node-fetch');
@@ -9,24 +9,20 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // OPTIONSリクエスト（プリフライト）への対応
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // GETリクエストのみ許可
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // クエリパラメータからカタログ番号とレーベル名を取得
-  const { catno, label } = req.query;
+  const { catno, label, details } = req.query;
 
   if (!catno) {
     return res.status(400).json({ error: 'Catalog number is required' });
   }
 
-  // 環境変数からDiscogs認証情報を取得
   const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
   const DISCOGS_USER_AGENT = process.env.DISCOGS_USER_AGENT || 'VinylInventoryProxy/1.0';
 
@@ -35,15 +31,14 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Discogs APIにリクエスト（レーベル名も検索条件に追加）
-    let discogsUrl = `https://api.discogs.com/database/search?catno=${encodeURIComponent(catno)}&type=release`;
+    // 検索リクエスト
+    let searchUrl = `https://api.discogs.com/database/search?catno=${encodeURIComponent(catno)}&type=release`;
     
-    // レーベル名が指定されている場合は追加
     if (label && label.trim() !== '') {
-      discogsUrl += `&label=${encodeURIComponent(label)}`;
+      searchUrl += `&label=${encodeURIComponent(label)}`;
     }
     
-    const response = await fetch(discogsUrl, {
+    const searchResponse = await fetch(searchUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Discogs token=${DISCOGS_TOKEN}`,
@@ -52,43 +47,78 @@ module.exports = async (req, res) => {
       }
     });
 
-    const statusCode = response.status;
-    const data = await response.json();
+    const searchStatus = searchResponse.status;
+    const searchData = await searchResponse.json();
 
-    // Discogsのレスポンスをそのまま返す
-    if (statusCode === 200) {
-      // 検索結果がある場合
-      if (data.results && data.results.length > 0) {
-        const firstResult = data.results[0];
-        
-        // レスポンスを整形
-        const result = {
-          success: true,
-          data: {
-            title: firstResult.title || '',
-            label: firstResult.label && firstResult.label[0] ? firstResult.label[0] : '',
-            genre: firstResult.genre ? firstResult.genre.join(', ') : '',
-            country: firstResult.country || '',
-            year: firstResult.year || '',
-            style: firstResult.style ? firstResult.style.join(', ') : '',
-            format: firstResult.format ? firstResult.format.join(', ') : ''
+    if (searchStatus === 200 && searchData.results && searchData.results.length > 0) {
+      const firstResult = searchData.results[0];
+      
+      // 基本情報
+      let result = {
+        success: true,
+        data: {
+          title: firstResult.title || '',
+          label: firstResult.label && firstResult.label[0] ? firstResult.label[0] : '',
+          genre: firstResult.genre ? firstResult.genre.join(', ') : '',
+          country: firstResult.country || '',
+          year: firstResult.year || '',
+          style: firstResult.style ? firstResult.style.join(', ') : '',
+          format: firstResult.format ? firstResult.format.join(', ') : ''
+        }
+      };
+      
+      // 詳細情報が必要な場合（details=trueパラメータ）
+      if (details === 'true' && firstResult.id) {
+        try {
+          const releaseUrl = `https://api.discogs.com/releases/${firstResult.id}`;
+          const releaseResponse = await fetch(releaseUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Discogs token=${DISCOGS_TOKEN}`,
+              'User-Agent': DISCOGS_USER_AGENT,
+              'Accept': 'application/vnd.discogs.v2.discogs+json'
+            }
+          });
+          
+          if (releaseResponse.status === 200) {
+            const releaseData = await releaseResponse.json();
+            
+            // トラックリスト取得
+            let tracklist = [];
+            if (releaseData.tracklist) {
+              tracklist = releaseData.tracklist.map(track => ({
+                position: track.position || '',
+                title: track.title || '',
+                duration: track.duration || ''
+              }));
+            }
+            
+            // 追加情報
+            result.data.tracklist = tracklist;
+            result.data.released = releaseData.released || '';
+            result.data.notes = releaseData.notes || '';
+            result.data.master_url = releaseData.master_url || '';
+            result.data.uri = releaseData.uri || '';
+            result.data.formats_detail = releaseData.formats || [];
           }
-        };
-        
-        return res.status(200).json(result);
-      } else {
-        // 検索結果なし
-        return res.status(404).json({
-          success: false,
-          error: 'No results found'
-        });
+        } catch (detailError) {
+          console.error('Detail fetch error:', detailError);
+          // 詳細取得失敗しても基本情報は返す
+        }
       }
-    } else {
-      // Discogsからエラーが返ってきた場合
-      return res.status(statusCode).json({
+      
+      return res.status(200).json(result);
+      
+    } else if (searchStatus === 200) {
+      return res.status(404).json({
         success: false,
-        error: data.message || 'Discogs API error',
-        details: data
+        error: 'No results found'
+      });
+    } else {
+      return res.status(searchStatus).json({
+        success: false,
+        error: searchData.message || 'Discogs API error',
+        details: searchData
       });
     }
 
