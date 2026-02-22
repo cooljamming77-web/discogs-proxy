@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
   }
 
   // クエリパラメータからカタログ番号を取得
-  const { catno } = req.query;
+  const { catno } = req.query
 
   if (!catno) {
     return res.status(400).json({ error: 'Catalog number is required' });
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
     if (statusCode === 200) {
       // 検索結果がある場合
       if (data.results && data.results.length > 0) {
-        const { year, country } = req.query;
+        const { year, country, label } = req.query;
 
         function scoreResult(r) {
           let score = 0;
@@ -96,7 +96,8 @@ module.exports = async (req, res) => {
             genre: firstResult.genre ? firstResult.genre.join(', ') : '',
             country: firstResult.country || '',
             year: firstResult.year || '',
-            style: firstResult.style ? firstResult.style.join(', ') : ''
+            style: firstResult.style ? firstResult.style.join(', ') : '',
+            format: firstResult.format ? firstResult.format.join(', ') : ''
           }
         };
         
