@@ -66,7 +66,8 @@ module.exports = async (req, res) => {
           }
           if (country && r.country && r.country.toLowerCase() === country.toLowerCase()) score += 5;
           if (r.status === 'Accepted') score += 3;
-          if (r.format && r.format.some(f => /LP|12"/.test(f))) score += 1;
+          if (r.format && r.format.length > 0) score += 3;
+        if (r.format && r.format.some(f => /LP|12"/.test(f))) score += 1;
           return score;
         }
 
