@@ -70,9 +70,14 @@ module.exports = async (req, res) => {
           return score;
         }
 
-        const firstResult = data.results.reduce((best, r) =>
-          scoreResult(r) >= scoreResult(best) ? r : best
-        , data.results[0]);
+        let firstResult;
+        try {
+          firstResult = data.results.reduce((best, r) =>
+            scoreResult(r) >= scoreResult(best) ? r : best
+          , data.results[0]);
+        } catch(e) {
+          firstResult = data.results[0];
+        }
         
         // レスポンスを整形
         const result = {
