@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
           }
           if (country && r.country && r.country.toLowerCase() === country.toLowerCase()) score += 5;
           if (r.status === 'Accepted') score += 3;
-          if (r.format && r.format.length > 0) score += 3;
+          if (r.format && r.format.length > 0) score += 8
         if (r.format && r.format.some(f => /LP|12"/.test(f))) score += 1;
           return score;
         }
@@ -78,6 +78,13 @@ module.exports = async (req, res) => {
           , data.results[0]);
         } catch(e) {
           firstResult = data.results[0];
+        }
+        // フォーマット未設定の場合、フォーマット有りの最高スコア結果を優先
+        if (!firstResult.format || firstResult.format.length === 0) {
+          const withFormat = data.results.filter(r => r.format && r.format.length > 0);
+          if (withFormat.length > 0) {
+            firstResult = withFormat.reduce((best, r) => scoreResult(r) >= scoreResult(best) ? r : best, withFormat[0]);
+          }
         }
         
         // レスポンスを整形
