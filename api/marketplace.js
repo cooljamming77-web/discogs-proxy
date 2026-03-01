@@ -9,8 +9,7 @@ module.exports = async (req, res) => {
   if (!DISCOGS_TOKEN) { return res.status(500).json({ error: 'DISCOGS_TOKEN not set' }); }
 
   try {
-    const url = `https://api.discogs.com/releases/249504/marketplace/listings?status=For+Sale&per_page=50`;
-    console.log('Fetching:', url);
+    const url = `https://api.discogs.com/marketplace/search?release_id=249504&status=For+Sale&per_page=50`;
 
     const response = await fetch(url, {
       headers: {
@@ -21,12 +20,10 @@ module.exports = async (req, res) => {
     });
 
     const text = await response.text();
-    console.log('Status:', response.status);
 
-    return res.status(200).json({ debug: true, status: response.status, body: text.substring(0, 1000) });
+    return res.status(200).json({ debug: true, status: response.status, body: text.substring(0, 2000) });
 
   } catch (e) {
-    console.error('Catch error:', e.message);
     return res.status(500).json({ error: e.message });
   }
 };
