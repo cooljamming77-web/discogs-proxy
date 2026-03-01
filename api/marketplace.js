@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
   if (!DISCOGS_TOKEN) { return res.status(500).json({ error: 'DISCOGS_TOKEN not set' }); }
 
   try {
-    const url = `https://api.discogs.com/marketplace/search?release_id=${release_id}&status=For+Sale&per_page=50`;
+    const url = `https://api.discogs.com/marketplace/search?q=&release_id=${release_id}&per_page=50`;
     console.log('Fetching:', url);
 
     const response = await fetch(url, {
