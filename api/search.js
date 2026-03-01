@@ -68,6 +68,8 @@ module.exports = async (req, res) => {
       let result = {
         success: true,
         data: {
+          // ★ release_id を追加
+          release_id: firstResult.id || null,
           title: firstResult.title || '',
           label: firstResult.label && firstResult.label[0] ? firstResult.label[0] : '',
           genre: firstResult.genre ? firstResult.genre.join(', ') : '',
