@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { return res.status(200).end(); }
   if (req.method !== 'GET') { return res.status(405).json({ error: 'Method not allowed' }); }
 
-  const { catno, label, details, year, country } = req.query;
+  const { catno, label, details, year, country, artist } = req.query;
   if (!catno) { return res.status(400).json({ error: 'Catalog number is required' }); }
 
   const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
@@ -20,8 +20,11 @@ module.exports = async (req, res) => {
   try {
     let searchUrl = `https://api.discogs.com/database/search?catno=${encodeURIComponent(catno)}&type=release`;
     if (label && label.trim() !== '') {
-      searchUrl += `&label=${encodeURIComponent(label)}`;
-    }
+  searchUrl += `&label=${encodeURIComponent(label)}`;
+}
+if (artist && artist.trim() !== '') {
+  searchUrl += `&artist=${encodeURIComponent(artist)}`;
+}
 
     const searchResponse = await fetch(searchUrl, {
       method: 'GET',
