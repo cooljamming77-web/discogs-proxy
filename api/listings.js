@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
 
   // ── POST: 出品 ──────────────────────────────────────
   if (req.method === 'POST') {
-    const { release_id, condition, price, status, comments } = req.body || {};
+    const { release_id, condition, sleeve_condition, price, status, allow_offers, weight, comments } = req.body || {};
 
     if (!release_id || !condition || !price) {
       return res.status(400).json({ error: 'release_id, condition, price are required' });
@@ -25,6 +25,18 @@ module.exports = async (req, res) => {
 
     try {
       const url = `https://api.discogs.com/marketplace/listings`;
+
+      const requestBody = {
+        release_id,
+        condition,
+        price,
+        status:       status       || 'For Sale',
+        allow_offers: allow_offers !== undefined ? allow_offers : true,
+        comments:     comments     || ''
+      };
+      if (sleeve_condition)      requestBody.sleeve_condition = sleeve_condition;
+      if (weight && weight > 0)  requestBody.weight = weight;
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -33,13 +45,7 @@ module.exports = async (req, res) => {
           'Content-Type': 'application/json',
           'Accept': 'application/vnd.discogs.v2.discogs+json'
         },
-        body: JSON.stringify({
-          release_id,
-          condition,
-          price,
-          status: status || 'For Sale',
-          comments: comments || ''
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
