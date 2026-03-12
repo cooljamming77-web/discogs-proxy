@@ -49,6 +49,8 @@ module.exports = async (req, res) => {
       });
 
       const data = await response.json();
+      console.log('Discogs request:', JSON.stringify(requestBody));
+      console.log('Discogs response:', response.status, JSON.stringify(data));
 
       if (response.status === 201) {
         return res.status(201).json({
@@ -59,7 +61,8 @@ module.exports = async (req, res) => {
       } else {
         return res.status(response.status).json({
           success: false,
-          error: data.message || 'Discogs API error'
+          error: data.message || 'Discogs API error',
+          detail: data
         });
       }
     } catch (error) {
